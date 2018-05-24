@@ -5,9 +5,32 @@ var _ = require('lodash');
 
 
 function CookieStorage(cookieStorage) {
-    this.storage = cookieStorage;
+    this.storage = Promise.promisifyAll(cookieStorage);
 }
 
+CookieStorage.prototype.getCookieValue = function (name,host=CONSTANTS.COOKIEHOSTNAME) {
+    return this.storage.findCookieAsync(host, '/', name)
+    .then(cookie=>{
+        if(!_.isObject(cookie) && host === CONSTANTS.COOKIEHOSTNAME){
+            return this.getCookieValue(name,CONSTANTS.HOSTNAME)
+        }else if(!_.isObject(cookie)){
+            throw new Exceptions.CookieNotValidError(name);
+        }else{
+            return cookie;
+        }
+    });
+};
+
+CookieStorage.prototype.getCookies = function (host=CONSTANTS.COOKIEHOSTNAME) {
+    return this.storage.findCookiesAsync(host, '/')
+    .then(cookies=>{
+        if(!cookies && host === CONSTANTS.COOKIEHOSTNAME){
+          return this.getCookies(CONSTANTS.HOSTNAME)
+        }else {
+          return cookies || [];
+        }
+    });
+};
 
 Object.defineProperty(CookieStorage.prototype, "store", {
     get: function() { return this.storage },
@@ -20,16 +43,7 @@ var Exceptions = require('./exceptions');
 module.exports = CookieStorage;
 
 
-CookieStorage.prototype.getCookieValue = function (name) {
-    var self = this;
-    return new Promise(function(resolve, reject) {
-	self.storage.findCookie('instagram.com', '/', name, function(err, cookie) {
-        if (err) return reject(err);
-            if (!_.isObject(cookie)) return reject(new Exceptions.CookieNotValidError(name));
-            resolve(cookie);
-        })
-    });
-};
+
 
 
 CookieStorage.prototype.putCookie = function (cookie) {
@@ -41,15 +55,6 @@ CookieStorage.prototype.putCookie = function (cookie) {
 };
 
 
-CookieStorage.prototype.getCookies = function () {
-    var self = this;
-    return new Promise(function(resolve, reject) {
-        self.storage.findCookies(CONSTANTS.HOSTNAME, '/', function(err, cookies){
-            if (err) return reject(err);
-            resolve(cookies || []);
-        })
-    });
-};
 
 
 CookieStorage.prototype.getAccountId = function () {
