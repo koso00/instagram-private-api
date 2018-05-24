@@ -20,11 +20,9 @@ uri = uri.replace(`://${CONSTANTS.COOKIEHOSTNAME}/`,`://${CONSTANTS.HOSTNAME}/`)
 };
 
 RequestJar.prototype.setCookie = function(cookieOrStr, uri, options) {
-    var self = this;
+    cookieOrStr = cookieOrStr.replace(/Domain=\.?instagram\.com;\s?/,'');
     uri = this.rewriteUri(uri);
-    // remove domain from cookie string so domain from uri will be used
-    cookieOrStr = cookieOrStr.replace(/Domain=(.*?); /g, '');
-    return self._jar.setCookieSync(cookieOrStr, uri, options || {});
+    return this._jar.setCookieSync(cookieOrStr, uri, options || {});
 };
 
 RequestJar.prototype.getCookieString = function(uri) {
